@@ -37,10 +37,10 @@ runs:
   steps:
     - name: Set environment variables
       shell: bash
+      env:
+        FLAVOR: ${{ inputs.flavor }}
+        BUILD_TYPE: ${{ inputs.buildType }}
       run: |
-        FLAVOR="${{ inputs.flavor }}"
-        BUILD_TYPE="${{ inputs.buildType }}"
-
         echo "FLAVOR_CAPITALIZED=${FLAVOR^}" >> $GITHUB_ENV
         echo "FLAVOR_CAPITALIZED_ALL=${FLAVOR^^}" >> $GITHUB_ENV
         echo "FLAVOR_LOWERCASE=${FLAVOR,,}" >> $GITHUB_ENV
@@ -55,22 +55,31 @@ runs:
 
     - name: Set up signing key
       shell: bash
+      env:
+        KEY_STORE: ${{ inputs.keyStore }}
+        KEY_STORE_PASSWORD: ${{ inputs.keyStorePassword }}
+        KEY_ALIAS: ${{ inputs.keyAlias }}
+        KEY_PASSWORD: ${{ inputs.keyPassword }}
+        WORKSPACE: ${{ github.workspace }}
       run: |
-        if [ -n "${{ inputs.keyStore }}" ]; then
-            echo keyStorePassword='${{ inputs.keyStorePassword }}' >> signing.properties
-            echo keyAlias='${{ inputs.keyAlias }}' >> signing.properties
-            echo keyPassword='${{ inputs.keyPassword }}' >> signing.properties
-            echo keyStore='${{ github.workspace }}/key.jks' >> signing.properties
-            echo ${{ inputs.keyStore }} | base64 --decode > ${{ github.workspace }}/key.jks
+        if [ -n "$KEY_STORE" ]; then
+            echo keyStorePassword="$KEY_STORE_PASSWORD" >> signing.properties
+            echo keyAlias="$KEY_ALIAS" >> signing.properties
+            echo keyPassword="$KEY_PASSWORD" >> signing.properties
+            echo keyStore="$WORKSPACE/key.jks" >> signing.properties
+            echo "$KEY_STORE" | base64 --decode > "$WORKSPACE/key.jks"
         fi
 
     - name: Set up credentials for private packages
       shell: bash
+      env:
+        USERNAME: ${{ inputs.username }}
+        TOKEN: ${{ inputs.token }}
       run: |
         [ -f gradle.properties ] && [ "$(tail -c1 gradle.properties)" != "" ] && echo >> gradle.properties
         {
-          echo "gpr.user=${{ inputs.username }}"
-          echo "gpr.key=${{ inputs.token }}"
+          echo "gpr.user=$USERNAME"
+          echo "gpr.key=$TOKEN"
         } >> gradle.properties
 
     - name: Set up JDK
